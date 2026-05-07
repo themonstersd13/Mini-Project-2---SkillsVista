@@ -1,0 +1,509 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum SWOTCategory {
+  STRENGTH
+  WEAKNESS
+  OPPORTUNITY
+  THREAT
+}
+
+enum SWOTStatus {
+  ACTIVE
+  UNCERTAIN
+  STALE
+  RETIRED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum EvidenceType {
+  SELF_REPORTED
+  TASK_BASED
+  MENTOR_FEEDBACK
+  PROJECT_PROGRESS
+  BEHAVIOR_PATTERN
+  ASSESSMENT
+}
+
+enum GoalStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ABANDONED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  MISSED
+}
+
+enum SignalStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+  EXPIRED
+}
+
+enum FollowUpStatus {
+  PENDING
+  ASKED
+  ANSWERED
+  EXPIRED
+}
+
+enum CheckInTrigger {
+  SCHEDULED
+  INACTIVITY
+  STREAK
+  MISSED_TASK
+  THREAT_WARNING
+  GOAL_STALL
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AcademicStage {
+  FY
+  SY
+  TY
+  LY
+}
+
+enum AssessmentQuestionType {
+  MCQ
+  WRITTEN
+}
+
+// ─── Core Models ─────────────────────────────────────────
+
+model User {
+  id                    String                @id @default(cuid())
+  email                 String                @unique
+  passwordHash          String
+  displayName           String
+  timezone              String                @default("Asia/Kolkata")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  profile               UserProfile?
+  sessions              Session[]
+  messages              ChatMessage[]
+  swotItems             SwotItem[]
+  evidence              Evidence[]
+  goals                 Goal[]
+  tasks                 Task[]
+  signals               Signal[]
+  followUps             FollowUp[]
+  habits                Habit[]
+  skills                Skill[]
+  checkIns              CheckIn[]
+  conversationSummaries ConversationSummary[]
+  auditLogs             AuditLog[]
+  notifications         Notification[]
+  contextEmbeddings     ContextEmbedding[]
+  assessments           SwotAssessment[]
+  weeklyAssessments     WeeklyAssessment[]
+}
+
+model UserProfile {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  academicBackground   String?
+  goalsSummary         String?
+  interests            String[]  @default([])
+  habits               String[]  @default([])
+  challenges           String[]  @default([])
+  onboardingComplete   Boolean   @default(false)
+  lastActiveAt         DateTime  @default(now())
+  currentStreak        Int       @default(0)
+  longestStreak        Int       @default(0)
+  preferredCheckInTime String?
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Session & Chat ──────────────────────────────────────
+
+model Session {
+  id            String        @id @default(cuid())
+  userId        String
+  startedAt     DateTime      @default(now())
+  lastMessageAt DateTime      @default(now())
+  summary       String?
+  messageCount  Int           @default(0)
+  createdAt     DateTime      @default(now())
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      ChatMessage[]
+
+  @@index([userId, lastMessageAt])
+}
+
+model ChatMessage {
+  id                 String      @id @default(cuid())
+  userId             String
+  sessionId          String?
+  role               MessageRole
+  content            String
+  moodScore          Int?
+  isCheckIn          Boolean     @default(false)
+  patternSignalScore Float       @default(0)
+  contextSnapshot    Json?
+  createdAt          DateTime    @default(now())
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session            Session?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([sessionId, createdAt])
+}
+
+// ─── SWOT ────────────────────────────────────────────────
+
+model SwotItem {
+  id              String            @id @default(cuid())
+  userId          String
+  category        SWOTCategory
+  title           String
+  description     String
+  confidence      Float             @default(0.5)
+  status          SWOTStatus        @default(ACTIVE)
+  signalCount     Int               @default(0)
+  staleAfterDays  Int               @default(21)
+  retiredAt       DateTime?
+  lastUpdatedAt   DateTime          @default(now())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evidence        Evidence[]
+  versions        SwotItemVersion[]
+  signals         Signal[]
+
+  @@index([userId, category, status])
+  @@index([userId, lastUpdatedAt])
+}
+
+model SwotItemVersion {
+  id             String      @id @default(cuid())
+  swotItemId     String
+  changedBy      String
+  reason         String
+  confidenceFrom Float
+  confidenceTo   Float
+  statusFrom     SWOTStatus
+  statusTo       SWOTStatus
+  snapshot       Json
+  createdAt      DateTime    @default(now())
+  swotItem       SwotItem    @relation(fields: [swotItemId], references: [id], onDelete: Cascade)
+
+  @@index([swotItemId, createdAt])
+}
+
+model Evidence {
+  id          String       @id @default(cuid())
+  userId      String
+  swotItemId  String
+  type        EvidenceType
+  source      String
+  excerpt     String
+  score       Float
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  swotItem    SwotItem     @relation(fields: [swotItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// ─── Signals ─────────────────────────────────────────────
+
+model Signal {
+  id              String       @id @default(cuid())
+  userId          String
+  swotItemId      String?
+  title           String
+  category        SWOTCategory
+  confidence      Float        @default(0.5)
+  status          SignalStatus @default(PENDING)
+  reason          String
+  evidenceExcerpt String
+  evidenceType    EvidenceType @default(SELF_REPORTED)
+  recurrenceCount Int          @default(1)
+  validatedAt     DateTime?
+  rejectedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  swotItem        SwotItem?    @relation(fields: [swotItemId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([userId, title, category])
+}
+
+// ─── Goals & Tasks ───────────────────────────────────────
+
+model Goal {
+  id          String      @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  status      GoalStatus  @default(ACTIVE)
+  progress    Float       @default(0)
+  milestones  Json?
+  dueDate     DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  skills      Skill[]
+
+  @@index([userId, status])
+}
+
+model Task {
+  id             String       @id @default(cuid())
+  userId         String
+  goalId         String?
+  title          String
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  dueDate        DateTime?
+  linkedSignalId String?
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal           Goal?        @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+}
+
+// ─── Follow-ups ──────────────────────────────────────────
+
+model FollowUp {
+  id          String         @id @default(cuid())
+  userId      String
+  question    String
+  context     String?
+  status      FollowUpStatus @default(PENDING)
+  answer      String?
+  askedAt     DateTime?
+  answeredAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime       @default(now())
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, expiresAt])
+}
+
+// ─── Habits & Skills ─────────────────────────────────────
+
+model Habit {
+  id             String   @id @default(cuid())
+  userId         String
+  title          String
+  description    String?
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  totalCompleted Int      @default(0)
+  lastCompletedAt DateTime?
+  impactArea     SWOTCategory?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  userId      String
+  goalId      String?
+  title       String
+  level       Float    @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal        Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+// ─── Memory & Intelligence ───────────────────────────────
+
+model ConversationSummary {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionId   String?
+  summary     String
+  topics      String[] @default([])
+  keyInsights String[] @default([])
+  moodAvg     Float?
+  messageCount Int     @default(0)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, periodEnd])
+}
+
+model CheckIn {
+  id        String         @id @default(cuid())
+  userId    String
+  trigger   CheckInTrigger
+  prompt    String
+  delivered Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, delivered])
+}
+
+// ─── Existing Support Models ─────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+model ContextEmbedding {
+  id        String   @id @default(cuid())
+  userId    String
+  sourceRef String
+  content   String
+  embedding Json
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sourceRef])
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  entityType  String
+  entityId    String
+  details     Json
+  createdAt   DateTime @default(now())
+  requestId   String?
+  actor       String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model SwotAssessment {
+  id                 String                  @id @default(cuid())
+  userId             String
+  academicStage      AcademicStage
+  title              String
+  overallScore       Float                   @default(0)
+  strengthsScore     Float                   @default(0)
+  weaknessesScore    Float                   @default(0)
+  opportunitiesScore Float                   @default(0)
+  threatsScore       Float                   @default(0)
+  narrative          String
+  recommendations    String[]                @default([])
+  takenAt            DateTime                @default(now())
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers            SwotAssessmentAnswer[]
+
+  @@unique([userId, academicStage])
+  @@index([userId, takenAt])
+}
+
+model SwotAssessmentAnswer {
+  id              String                 @id @default(cuid())
+  assessmentId    String
+  questionKey     String
+  questionType    AssessmentQuestionType
+  prompt          String
+  category        SWOTCategory
+  dimensionKey    String
+  answerText      String?
+  answerScore     Float?
+  optionLabel     String?
+  weight          Float                  @default(1)
+  evidenceExcerpt String?
+  createdAt       DateTime               @default(now())
+  assessment      SwotAssessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId, category])
+  @@index([assessmentId, questionKey])
+}
+
+model WeeklyAssessment {
+  id                 String                   @id @default(cuid())
+  userId             String
+  weekStart          DateTime
+  weekEnd            DateTime
+  overallScore       Float                    @default(0)
+  strengthsScore     Float                    @default(0)
+  weaknessesScore    Float                    @default(0)
+  opportunitiesScore Float                    @default(0)
+  threatsScore       Float                    @default(0)
+  summary            String
+  recommendations    String[]                 @default([])
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  user               User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers            WeeklyAssessmentAnswer[]
+
+  @@unique([userId, weekStart])
+  @@index([userId, createdAt])
+}
+
+model WeeklyAssessmentAnswer {
+  id                 String                 @id @default(cuid())
+  weeklyAssessmentId String
+  questionKey        String
+  questionType       AssessmentQuestionType
+  prompt             String
+  category           SWOTCategory
+  dimensionKey       String
+  sourceTag          String
+  linkedSwotItemId   String?
+  linkedSwotTitle    String?
+  answerText         String?
+  answerScore        Float?
+  optionLabel        String?
+  weight             Float                  @default(1)
+  evidenceExcerpt    String?
+  createdAt          DateTime               @default(now())
+  weeklyAssessment   WeeklyAssessment       @relation(fields: [weeklyAssessmentId], references: [id], onDelete: Cascade)
+
+  @@index([weeklyAssessmentId, category])
+  @@index([weeklyAssessmentId, questionKey])
+}
