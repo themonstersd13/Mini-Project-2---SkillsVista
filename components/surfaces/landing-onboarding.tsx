@@ -123,17 +123,30 @@ export function LandingOnboardingSurface() {
             displayName,
           }),
         });
+        // New users always need onboarding
+        setProfileReady(true);
       } else {
-        await apiFetch("/api/auth/login", {
+        const loginResult = await apiFetch<{
+          id: string;
+          email: string;
+          displayName: string;
+          onboardingComplete: boolean;
+        }>("/api/auth/login", {
           method: "POST",
           body: JSON.stringify({
             email,
             password,
           }),
         });
-      }
 
-      setProfileReady(true);
+        // If user already completed onboarding, skip the questions
+        if (loginResult.onboardingComplete) {
+          router.replace("/dashboard");
+          return;
+        }
+
+        setProfileReady(true);
+      }
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Authentication failed");
     }

@@ -125,6 +125,7 @@ export function WeeklyAssessmentSurface() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
 
   async function loadData() {
     const response = await apiFetch<WeeklyResponse>("/api/weekly-assessments");
@@ -234,74 +235,92 @@ export function WeeklyAssessmentSurface() {
     setCurrentIndex((index) => Math.max(index - 1, 0));
   }
 
+  // Determine the current phase for the step indicator
+  const phase = !started ? 0 : isLastQuestion && canAdvance ? 2 : 1;
+  const steps = ["Review", "Answer Questions", "Submit"];
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f5f7f8_0%,#eef7f4_100%)]">
       <AppNav />
       <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8">
-        <div className="mb-6 grid gap-5 xl:grid-cols-[1.12fr_0.88fr]">
-          <Card className="overflow-hidden border-emerald-200/80 bg-[radial-gradient(circle_at_top_left,_rgba(0,120,106,0.18),_transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(244,255,250,0.95))] p-6">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/70 bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">
-              <ClipboardList size={12} />
-              Weekly Assessment Test
-            </div>
-            <h1 className="max-w-3xl text-3xl font-bold text-[var(--text)]">
-              A dedicated weekly test, separate from chat, with fixed questions and SWOT-based follow-ups.
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-black/58">
-              The student answers one question at a time like a real assessment. Standard questions stay consistent every week, while extra questions adapt to the current SWOT profile.
-            </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/80 bg-white/88 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-black/35">This Week</p>
-                <p className="mt-1 text-xl font-bold text-[var(--text)]">
-                  {loading ? "..." : data?.questionnaire.weekLabel}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/80 bg-white/88 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-black/35">Questions</p>
-                <p className="mt-1 text-xl font-bold text-[var(--text)]">
-                  {loading ? "..." : allQuestions.length}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/80 bg-white/88 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-black/35">Completed</p>
-                <p className="mt-1 text-xl font-bold text-[var(--text)]">
-                  {loading ? "..." : `${completedCount}/${allQuestions.length}`}
-                </p>
-              </div>
-            </div>
-          </Card>
 
-          <div className="space-y-4">
-            <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Target size={16} className="text-[var(--brand)]" />
-                  <p className="text-sm font-semibold text-[var(--text)]">Assessment Progress</p>
-                </div>
-                <span className="text-xs font-semibold text-black/45">
-                  {loading ? "..." : percent(progress)}
-                </span>
+        {/* ── Step Progress Indicator ── */}
+        <div className="mb-6 flex items-center justify-center gap-1">
+          {steps.map((stepLabel, i) => (
+            <div key={stepLabel} className="flex items-center gap-1">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                i <= phase ? "bg-[var(--brand)] text-white" : "bg-black/8 text-black/40"
+              }`}>
+                {i < phase ? <CheckCircle2 size={14} /> : i + 1}
               </div>
-              <div className="h-3 overflow-hidden rounded-full bg-black/8">
-                <motion.div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,var(--brand),#14b8a6)]"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.max(progress * 100, 4)}%` }}
-                  transition={{ duration: 0.5 }}
-                />
+              <span className={`text-sm font-medium ${i <= phase ? "text-[var(--text)]" : "text-black/35"}`}>
+                {stepLabel}
+              </span>
+              {i < steps.length - 1 && (
+                <div className={`mx-2 h-0.5 w-10 rounded-full ${i < phase ? "bg-[var(--brand)]" : "bg-black/10"}`} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* ── Intro / Welcome Screen ── */}
+        {!started && !loading && data && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="mx-auto max-w-2xl overflow-hidden border-emerald-200/80 bg-[radial-gradient(circle_at_top_left,_rgba(0,120,106,0.14),_transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(244,255,250,0.95))] p-8 text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--brand)]/10">
+                <ClipboardList size={32} className="text-[var(--brand)]" />
               </div>
-              <p className="mt-3 text-sm text-black/55">
-                {loading
-                  ? "Loading assessment..."
-                  : data?.completion.completedThisWeek
-                    ? `This week's assessment was already submitted${data.completion.submittedAt ? ` on ${format(new Date(data.completion.submittedAt), "dd MMM, hh:mm a")}` : ""}. You can review or update it here.`
-                    : "This week's assessment is pending. Complete each question in sequence and submit at the end."}
+              <h1 className="text-2xl font-bold text-[var(--text)]">
+                {data.questionnaire.title}
+              </h1>
+              <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-black/58">
+                {data.questionnaire.subtitle}
               </p>
+
+              <div className="mx-auto mt-6 grid max-w-md gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/80 bg-white/88 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-black/35">This Week</p>
+                  <p className="mt-1 text-lg font-bold text-[var(--text)]">{data.questionnaire.weekLabel}</p>
+                </div>
+                <div className="rounded-2xl border border-white/80 bg-white/88 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-black/35">Questions</p>
+                  <p className="mt-1 text-lg font-bold text-[var(--text)]">{allQuestions.length}</p>
+                </div>
+                <div className="rounded-2xl border border-white/80 bg-white/88 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-black/35">Completed</p>
+                  <p className="mt-1 text-lg font-bold text-[var(--text)]">{completedCount}/{allQuestions.length}</p>
+                </div>
+              </div>
+
+              <div className="mx-auto mt-6 max-w-md space-y-2 text-left text-sm text-black/55">
+                <div className="flex items-start gap-2 rounded-xl bg-white/70 px-4 py-3">
+                  <Target size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <span>Answer one question at a time at your own pace</span>
+                </div>
+                <div className="flex items-start gap-2 rounded-xl bg-white/70 px-4 py-3">
+                  <Sparkles size={16} className="mt-0.5 shrink-0 text-blue-600" />
+                  <span>Some questions adapt to your current SWOT profile</span>
+                </div>
+                <div className="flex items-start gap-2 rounded-xl bg-white/70 px-4 py-3">
+                  <ShieldAlert size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                  <span>Your results update your SWOT dashboard automatically</span>
+                </div>
+              </div>
+
+              {data.completion.completedThisWeek && (
+                <p className="mt-4 text-xs text-emerald-700">
+                  ✓ Already submitted{data.completion.submittedAt ? ` on ${format(new Date(data.completion.submittedAt), "dd MMM, hh:mm a")}` : ""}. You can review or update.
+                </p>
+              )}
+
+              <Button className="mt-6 px-8" onClick={() => setStarted(true)}>
+                {data.completion.completedThisWeek ? "Review Answers" : "Begin Assessment"}
+                <ArrowRight size={15} className="ml-2" />
+              </Button>
             </Card>
 
             {latestHistory && (
-              <Card className="p-5">
+              <Card className="mx-auto mt-4 max-w-2xl p-5">
                 <div className="mb-2 flex items-center gap-2">
                   <ShieldAlert size={16} className="text-amber-700" />
                   <p className="text-sm font-semibold text-[var(--text)]">Latest Weekly Snapshot</p>
@@ -311,23 +330,15 @@ export function WeeklyAssessmentSurface() {
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-black/58">{latestHistory.summary}</p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
-                    Strengths {percent(latestHistory.strengthsScore)}
-                  </div>
-                  <div className="rounded-2xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
-                    Weaknesses {percent(latestHistory.weaknessesScore)}
-                  </div>
-                  <div className="rounded-2xl bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700">
-                    Opportunities {percent(latestHistory.opportunitiesScore)}
-                  </div>
-                  <div className="rounded-2xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-                    Threats {percent(latestHistory.threatsScore)}
-                  </div>
+                  <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Strengths {percent(latestHistory.strengthsScore)}</div>
+                  <div className="rounded-2xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">Weaknesses {percent(latestHistory.weaknessesScore)}</div>
+                  <div className="rounded-2xl bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700">Opportunities {percent(latestHistory.opportunitiesScore)}</div>
+                  <div className="rounded-2xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">Threats {percent(latestHistory.threatsScore)}</div>
                 </div>
               </Card>
             )}
-          </div>
-        </div>
+          </motion.div>
+        )}
 
         {loading && (
           <div className="flex items-center justify-center py-20 text-sm text-black/45">
@@ -348,7 +359,7 @@ export function WeeklyAssessmentSurface() {
           </div>
         )}
 
-        {!loading && data && currentQuestion && (
+        {!loading && started && data && currentQuestion && (
           <section className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
             <Card className="overflow-hidden border-black/8 bg-white/94 p-5">
               <div className="mb-4 flex items-center gap-2">

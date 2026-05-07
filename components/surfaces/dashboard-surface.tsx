@@ -361,10 +361,24 @@ export function DashboardSurface() {
           </Card>
         )}
 
-        {/* ── SWOT Board ── */}
+        {/* ── SWOT Board — 2×2 Grid ── */}
         {!loading && board && totalItems > 0 && (
-          <section className="grid gap-4 lg:grid-cols-[1fr_340px]">
-            <div className="grid gap-4 md:grid-cols-2">
+          <>
+            {/* What is SWOT info banner */}
+            <div className="mb-5 rounded-xl border border-black/8 bg-white/90 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <Info size={16} className="mt-0.5 shrink-0 text-[var(--brand)]" />
+                <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-black/55">
+                  <span><strong className="text-emerald-600">Strengths</strong> — Skills and qualities you excel at</span>
+                  <span><strong className="text-amber-600">Weaknesses</strong> — Areas where you can grow</span>
+                  <span><strong className="text-blue-600">Opportunities</strong> — External resources and advantages you can use</span>
+                  <span><strong className="text-rose-600">Threats</strong> — Obstacles and challenges to be aware of</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2×2 SWOT Grid */}
+            <section className="grid gap-4 md:grid-cols-2">
               {quadrants.map((quadrant, index) => (
                 <motion.div
                   key={quadrant.key}
@@ -372,7 +386,7 @@ export function DashboardSurface() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="h-full overflow-hidden p-0">
+                  <Card className="flex h-full flex-col overflow-hidden p-0">
                     {/* Quadrant Header */}
                     <div className={`flex items-center gap-3 border-b border-black/6 bg-gradient-to-r ${quadrant.gradient} px-5 py-4`}>
                       <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${quadrant.iconBg}`}>
@@ -385,164 +399,155 @@ export function DashboardSurface() {
                       <span className="ml-auto text-lg font-bold text-black/20">{board[quadrant.key].length}</span>
                     </div>
 
-                    {/* Items */}
-                    <div className="space-y-0 divide-y divide-black/6 px-4">
-                      {board[quadrant.key].map((item) => {
-                        const recent = isRecentlyUpdated(item.lastUpdatedAt);
-                        return (
-                          <article
-                            key={item.id}
-                            className={`relative py-4 ${recent ? "bg-blue-50/30" : ""}`}
-                          >
-                            {/* New badge */}
-                            {recent && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute -top-1 right-0 inline-flex items-center gap-1 rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm"
-                              >
-                                <Sparkles size={10} /> NEW
-                              </motion.span>
-                            )}
+                    {/* Items — Scrollable container */}
+                    <div className="max-h-[340px] overflow-y-auto">
+                      <div className="space-y-0 divide-y divide-black/6 px-4">
+                        {board[quadrant.key].map((item) => {
+                          const recent = isRecentlyUpdated(item.lastUpdatedAt);
+                          return (
+                            <article
+                              key={item.id}
+                              className={`relative py-4 ${recent ? "bg-blue-50/30" : ""}`}
+                            >
+                              {/* New badge */}
+                              {recent && (
+                                <motion.span
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute -top-1 right-0 inline-flex items-center gap-1 rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm"
+                                >
+                                  <Sparkles size={10} /> NEW
+                                </motion.span>
+                              )}
 
-                            <div className="mb-1.5 flex items-start justify-between gap-2">
-                              <p className="font-semibold text-[var(--text)]">{item.title}</p>
-                              <StatusBadge status={item.status} />
-                            </div>
+                              <div className="mb-1.5 flex items-start justify-between gap-2">
+                                <p className="font-semibold text-[var(--text)]">{item.title}</p>
+                                <StatusBadge status={item.status} />
+                              </div>
 
-                            <p className="text-sm leading-relaxed text-black/60">{item.description}</p>
+                              <p className="text-sm leading-relaxed text-black/60">{item.description}</p>
 
-                            <div className="mt-3 flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div>
-                                  <p className="text-[10px] font-medium uppercase tracking-wide text-black/35">Confidence</p>
-                                  <ConfidenceMeter value={item.confidence} />
+                              <div className="mt-3 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div>
+                                    <p className="text-[10px] font-medium uppercase tracking-wide text-black/35">Confidence</p>
+                                    <ConfidenceMeter value={item.confidence} />
+                                  </div>
+                                  <div className="flex items-center gap-1 text-[11px] text-black/40">
+                                    <Clock size={11} />
+                                    {formatDistanceToNow(new Date(item.lastUpdatedAt), { addSuffix: true })}
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1 text-[11px] text-black/40">
-                                  <Clock size={11} />
-                                  {formatDistanceToNow(new Date(item.lastUpdatedAt), { addSuffix: true })}
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => openHistory(item.id)}
+                                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-black/50 transition hover:bg-black/5 hover:text-black/70"
+                                  >
+                                    <Eye size={12} /> History
+                                  </button>
+                                  <button
+                                    onClick={() => markRetired(item.id)}
+                                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-black/40 transition hover:bg-red-50 hover:text-red-600"
+                                  >
+                                    <Archive size={12} /> Retire
+                                  </button>
                                 </div>
                               </div>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => openHistory(item.id)}
-                                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-black/50 transition hover:bg-black/5 hover:text-black/70"
-                                >
-                                  <Eye size={12} /> History
-                                </button>
-                                <button
-                                  onClick={() => markRetired(item.id)}
-                                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-black/40 transition hover:bg-red-50 hover:text-red-600"
-                                >
-                                  <Archive size={12} /> Retire
-                                </button>
-                              </div>
-                            </div>
-                          </article>
-                        );
-                      })}
-                      {board[quadrant.key].length === 0 && (
-                        <p className="py-6 text-center text-sm text-black/35">
-                          No {quadrant.label.toLowerCase()} discovered yet. Keep chatting with your coach!
-                        </p>
-                      )}
+                            </article>
+                          );
+                        })}
+                        {board[quadrant.key].length === 0 && (
+                          <p className="py-6 text-center text-sm text-black/35">
+                            No {quadrant.label.toLowerCase()} discovered yet. Keep chatting with your coach!
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
               ))}
-            </div>
+            </section>
 
-            {/* ── History Sidebar ── */}
-            <div className="space-y-4">
-              {/* What is SWOT info card */}
-              <Card className="p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Info size={16} className="text-[var(--brand)]" />
-                  <h3 className="text-sm font-bold text-[var(--text)]">Understanding Your SWOT</h3>
-                </div>
-                <div className="space-y-2 text-xs text-black/55 leading-relaxed">
-                  <p><strong className="text-emerald-600">Strengths</strong> — Skills and qualities you excel at</p>
-                  <p><strong className="text-amber-600">Weaknesses</strong> — Areas where you can grow</p>
-                  <p><strong className="text-blue-600">Opportunities</strong> — External resources and advantages you can use</p>
-                  <p><strong className="text-rose-600">Threats</strong> — Obstacles and challenges to be aware of</p>
-                </div>
-                <p className="mt-3 text-[11px] text-black/40 leading-relaxed">
-                  Your insights are auto-discovered from your coaching chats and update in real-time.
-                  Items with higher confidence have been mentioned or reinforced multiple times.
-                </p>
-              </Card>
+            {/* ── History Panel (shown as modal-like overlay) ── */}
+            {(history || historyLoading) && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+                onClick={() => setHistory(null)}
+              >
+                <Card
+                  className="relative max-h-[80vh] w-full max-w-lg overflow-y-auto p-6"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => setHistory(null)}
+                    className="absolute right-4 top-4 text-black/30 transition hover:text-black/60"
+                  >
+                    <X size={18} />
+                  </button>
 
-              {/* Version History Panel */}
-              <Card className="p-5">
-                <h3 className="text-sm font-bold text-[var(--text)]">Change History</h3>
-                {!history && !historyLoading && (
-                  <p className="mt-3 text-xs text-black/45">
-                    Click <strong>&quot;History&quot;</strong> on any SWOT item to see how it was discovered and how it changed over time.
-                  </p>
-                )}
-                {historyLoading && <p className="mt-3 text-xs text-black/45">Loading history...</p>}
-                {history && (
-                  <>
-                    <button
-                      onClick={() => setHistory(null)}
-                      className="absolute right-3 top-3 text-black/30 transition hover:text-black/60"
-                    >
-                      <X size={14} />
-                    </button>
-                    <div className="mt-3 rounded-xl border border-black/8 bg-gradient-to-r from-black/[0.02] to-transparent p-3">
-                      <p className="font-semibold text-[var(--text)]">{history.item.title}</p>
-                      <p className="mt-1 text-xs text-black/50">
-                        {history.item.category.charAt(0) + history.item.category.slice(1).toLowerCase()} •{" "}
-                        <StatusBadge status={history.item.status} />
-                      </p>
-                    </div>
+                  <h3 className="mb-4 text-lg font-bold text-[var(--text)]">Change History</h3>
 
-                    {/* Evidence */}
-                    <div className="mt-4">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-black/40">
-                        Evidence ({history.evidence.length})
-                      </p>
-                      {history.evidence.length === 0 && (
-                        <p className="text-xs text-black/40">No evidence recorded yet.</p>
-                      )}
-                      {history.evidence.slice(0, 4).map((entry) => (
-                        <div key={entry.id} className="mb-2 rounded-lg border border-black/6 bg-white p-3">
-                          <p className="text-xs font-medium text-black/60">
-                            {entry.type.replaceAll("_", " ").toLowerCase()}
-                          </p>
-                          <p className="mt-1 text-xs text-black/50 italic">&quot;{entry.excerpt}&quot;</p>
-                        </div>
-                      ))}
-                    </div>
+                  {historyLoading && <p className="text-sm text-black/45">Loading history...</p>}
 
-                    {/* Timeline */}
-                    <div className="mt-4">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-black/40">
-                        Changes ({history.versions.length})
-                      </p>
-                      {history.versions.length === 0 && (
-                        <p className="text-xs text-black/40">No changes recorded yet.</p>
-                      )}
-                      <div className="relative space-y-0 border-l-2 border-black/8 pl-4">
-                        {history.versions.slice(0, 5).map((version) => (
-                          <div key={version.id} className="relative pb-4">
-                            <div className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[var(--brand)]" />
-                            <p className="text-xs font-medium text-[var(--text)]">{version.reason}</p>
-                            <p className="mt-0.5 text-[11px] text-black/45">
-                              Confidence: {formatConfidence(version.confidenceFrom)} → {formatConfidence(version.confidenceTo)}
+                  {history && (
+                    <>
+                      <div className="rounded-xl border border-black/8 bg-gradient-to-r from-black/[0.02] to-transparent p-3">
+                        <p className="font-semibold text-[var(--text)]">{history.item.title}</p>
+                        <p className="mt-1 text-xs text-black/50">
+                          {history.item.category.charAt(0) + history.item.category.slice(1).toLowerCase()} •{" "}
+                          <StatusBadge status={history.item.status} />
+                        </p>
+                      </div>
+
+                      {/* Evidence */}
+                      <div className="mt-4">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-black/40">
+                          Evidence ({history.evidence.length})
+                        </p>
+                        {history.evidence.length === 0 && (
+                          <p className="text-xs text-black/40">No evidence recorded yet.</p>
+                        )}
+                        {history.evidence.slice(0, 4).map((entry) => (
+                          <div key={entry.id} className="mb-2 rounded-lg border border-black/6 bg-white p-3">
+                            <p className="text-xs font-medium text-black/60">
+                              {entry.type.replaceAll("_", " ").toLowerCase()}
                             </p>
-                            <p className="text-[10px] text-black/35">
-                              {formatDistanceToNow(new Date(version.createdAt), { addSuffix: true })}
-                            </p>
+                            <p className="mt-1 text-xs text-black/50 italic">&quot;{entry.excerpt}&quot;</p>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  </>
-                )}
-              </Card>
-            </div>
-          </section>
+
+                      {/* Timeline */}
+                      <div className="mt-4">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-black/40">
+                          Changes ({history.versions.length})
+                        </p>
+                        {history.versions.length === 0 && (
+                          <p className="text-xs text-black/40">No changes recorded yet.</p>
+                        )}
+                        <div className="relative space-y-0 border-l-2 border-black/8 pl-4">
+                          {history.versions.slice(0, 5).map((version) => (
+                            <div key={version.id} className="relative pb-4">
+                              <div className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[var(--brand)]" />
+                              <p className="text-xs font-medium text-[var(--text)]">{version.reason}</p>
+                              <p className="mt-0.5 text-[11px] text-black/45">
+                                Confidence: {formatConfidence(version.confidenceFrom)} → {formatConfidence(version.confidenceTo)}
+                              </p>
+                              <p className="text-[10px] text-black/35">
+                                {formatDistanceToNow(new Date(version.createdAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </Card>
+              </motion.div>
+            )}
+          </>
         )}
       </main>
     </div>

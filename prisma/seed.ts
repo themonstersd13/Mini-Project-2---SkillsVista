@@ -491,40 +491,40 @@ const demoUsers: DemoUserSeed[] = [
     password: "student1234",
     displayName: "Aarav Kulkarni",
     profile: {
-      academicBackground: "Last-year engineering student focused on placements and leadership growth",
-      goalsSummary: "Show year-over-year growth, placement readiness, and stronger self-management",
-      interests: ["Mentorship", "Public speaking", "Full-stack projects"],
-      habits: ["Weekly reflection review", "Mock interviews", "Peer accountability check-ins"],
+      academicBackground: "Final-year student focused on personal growth, leadership, and career readiness",
+      goalsSummary: "Build professional confidence, handle pressure better, and sustain good habits after college",
+      interests: ["Mentorship", "Public speaking", "Self-improvement"],
+      habits: ["Weekly reflection", "Morning planning", "Peer accountability check-ins"],
       challenges: ["Overthinking major decisions", "Burnout during deadline clusters"],
       currentStreak: 8,
       longestStreak: 19,
     },
     goals: [
       {
-        title: "Finish placement season with confidence",
-        description: "Keep calm under pressure and present a stronger professional profile.",
+        title: "Build confidence for life after college",
+        description: "Stay calm under pressure and present myself clearly in any professional situation.",
         progress: 0.74,
         milestones: [
-          { label: "Resume finalized", done: true },
-          { label: "Six mock interviews", done: true },
-          { label: "Two mentor reviews", done: true },
-          { label: "Final confidence sprint", done: false },
+          { label: "Resume and self-pitch finalized", done: true },
+          { label: "Six practice presentations", done: true },
+          { label: "Two mentor feedback sessions", done: true },
+          { label: "Final confidence check-in", done: false },
         ],
         tasks: [
           {
-            title: "Run one final HR mock with mentor",
+            title: "Complete one final mock presentation with mentor",
             status: "IN_PROGRESS",
             priority: "HIGH",
             dueInDays: 4,
           },
           {
-            title: "Refine introduction and project storytelling",
+            title: "Practice introducing myself and telling my story clearly",
             status: "TODO",
             priority: "HIGH",
             dueInDays: 2,
           },
           {
-            title: "Complete peer confidence review",
+            title: "Complete peer feedback review",
             status: "DONE",
             priority: "MEDIUM",
             completedDaysAgo: 1,
@@ -532,7 +532,7 @@ const demoUsers: DemoUserSeed[] = [
         ],
       },
       {
-        title: "Sustain calm routines during final semester",
+        title: "Maintain calm routines during final semester",
         description: "Prevent pressure spikes from affecting decisions and consistency.",
         progress: 0.58,
         tasks: [
@@ -603,34 +603,6 @@ const demoUsers: DemoUserSeed[] = [
       },
     ],
     assessments: [
-      {
-        stage: "FY",
-        takenAt: new Date("2023-09-12T10:00:00.000Z"),
-        answers: stageAnswers([
-          ["fy-routine", 2],
-          ["fy-communication", 1],
-          ["fy-opportunity-seeking", 2],
-          ["fy-stress-adjustment", 4],
-          ["fy-time-management", 4],
-          ["fy-proud-moment", "I finally began speaking to classmates instead of staying quiet all day, which made me feel more included."],
-          ["fy-main-challenge", "Homesickness and confusion about college life made me avoid asking for help and I delayed important work."],
-          ["fy-opportunity-next", "I should use clubs, mentors, and healthy friendships more instead of trying to handle everything alone."],
-        ]),
-      },
-      {
-        stage: "SY",
-        takenAt: new Date("2024-08-28T10:00:00.000Z"),
-        answers: stageAnswers([
-          ["sy-consistency", 3],
-          ["sy-teamwork", 3],
-          ["sy-initiative", 2],
-          ["sy-overwhelm", 3],
-          ["sy-feedback", 2],
-          ["sy-growth-proof", "I started planning my week on Sundays and I became more dependable in group commitments."],
-          ["sy-hidden-blocker", "When I get overwhelmed, I still avoid difficult conversations and then small issues grow bigger."],
-          ["sy-support-gap", "I know seniors and mentors can guide me, but I still do not reach out as often as I should."],
-        ]),
-      },
       {
         stage: "TY",
         takenAt: new Date("2025-08-24T10:00:00.000Z"),
