@@ -403,22 +403,11 @@ export function DashboardSurface() {
                     <div className="max-h-[340px] overflow-y-auto">
                       <div className="space-y-0 divide-y divide-black/6 px-4">
                         {board[quadrant.key].map((item) => {
-                          const recent = isRecentlyUpdated(item.lastUpdatedAt);
                           return (
                             <article
                               key={item.id}
-                              className={`relative py-4 ${recent ? "bg-blue-50/30" : ""}`}
+                              className="relative py-4"
                             >
-                              {/* New badge */}
-                              {recent && (
-                                <motion.span
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  className="absolute -top-1 right-0 inline-flex items-center gap-1 rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm"
-                                >
-                                  <Sparkles size={10} /> NEW
-                                </motion.span>
-                              )}
 
                               <div className="mb-1.5 flex items-start justify-between gap-2">
                                 <p className="font-semibold text-[var(--text)]">{item.title}</p>
